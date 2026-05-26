@@ -1,0 +1,224 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "q": "is:unread"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -80,
+        0
+      ],
+      "id": " ",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": " ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze this email carefully.\n\nEmail:\n{{$json.snippet}}\n\nReturn ONLY in this exact format:\n\nPRIORITY: [High/Medium/Low/Critical]\n\nSUMMARY:\n[2-3 line summary]\n\nACTION ITEMS:\n- item 1\n- item 2\n\nDEADLINE:\n[mention if exists, otherwise \"No deadline\"]\n\nREPLY DRAFT:\n[Write a short professional email reply under 80 words]",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        208,
+        0
+      ],
+      "id": " ",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.0-flash-001",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        144,
+        208
+      ],
+      "id": " ",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": " ",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": " ",
+        "text": "=🚨 AI Executive Assistant Alert\n\n{{$json.text}}\n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        928,
+        16
+      ],
+      "id": " ",
+      "name": "Send a text message",
+      "webhookId": " ",
+      "credentials": {
+        "telegramApi": {
+          "id": " ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": " ",
+              "leftValue": "={{$json.text}}",
+              "rightValue": "PRIORITY:\\s*(Critical|High)",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        608,
+        144
+      ],
+      "id": " ",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$node[\"Gmail Trigger\"].json[\"From\"].match(/<(.+)>/)[1]}}",
+        "subject": "n8n Gmail Test",
+        "emailType": "text",
+        "message": "={{$node[\"Basic LLM Chain\"].json[\"text\"]}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        16
+      ],
+      "id": " ",
+      "name": "Send a message",
+      "webhookId": " ",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": " ",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": " ",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": " "
+  },
+  "id": " ",
+  "tags": [
+    {
+      "updatedAt": "2026-05-26T04:58:30.093Z",
+      "createdAt": "2026-05-26T04:58:30.093Z",
+      "id": " ",
+      "name": "AI Associate OS"
+    }
+  ]
+}
